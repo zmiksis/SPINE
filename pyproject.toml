@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "spine"
+version = "1.0.0"
+description = "SPINE - Simulator for Plasticity and Integrated Neuronal Events"
+authors = [
+  { name="Zachary M. Miksis", email="miksis@temple.edu" }
+]
+
+dependencies = [
+  "numpy>=2.2.4",
+  "scipy>=1.15.2",
+  "petsc4py>=3.23.5",
+  "mpi4py>=4.1.0"
+]
