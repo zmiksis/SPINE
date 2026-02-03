@@ -478,21 +478,3 @@ na_channel.g_max = 800e-12  # Increase Na conductance
 # Or remove a channel
 neuron.CableSettings.channels.remove(k_channel)
 ```
-
-## Key Features
-
-1. ✓ **Preserves leak balancing mechanism**
-2. ✓ **Extensible via factory pattern**
-3. ✓ **Consistent with synapse architecture**
-4. ✓ **Easy to add new channel types**
-5. ✓ **Multiple instances of same channel type**
-6. ✓ **Clean separation of concerns**
-7. ✓ **Backward compatible workflow**
-
-## Migration Path
-
-1. Create new files: `base.py`, `channels.py`, `factory.py`
-2. Refactor `current_model.py` to use channel list
-3. Update `sbdf.py` to call new API
-4. Deprecate old `IonChannel` class (keep for compatibility)
-5. Update examples to use factory pattern
