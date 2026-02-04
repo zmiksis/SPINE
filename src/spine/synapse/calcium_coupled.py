@@ -67,19 +67,44 @@ class CalciumInfluxSynapse(Synapse):
         """
         flux = np.zeros_like(neuron.sol.C)
 
+        data = {
+                'V': 1e-3 * neuron.sol.V,  # Convert mV to V
+                'C': neuron.sol.C,  # Already in μM
+                'co': 1e15 * neuron.settings.cceq  # Baseline concentration in μM
+            }
+
         # Get time-dependent amplitude
         amplitude = self.temporal_pattern.get_amplitude(t)
 
         if amplitude > 0:
             # Compute base flux from receptor
-            base_flux = self.receptor_model.compute_flux({}, {})
+            base_flux = self.receptor_model.compute_flux({}, data)
 
             # Apply to specified nodes
             for node in self.nodes:
-                flux[node] = amplitude * base_flux
+                if isinstance(base_flux, np.ndarray):
+                    flux[node] = amplitude * base_flux[node]
+                else:
+                    flux[node] = amplitude * base_flux
 
         return flux
+    
+    def update_state(self, dt: float, neuron, comm=None, comm_iter=None):
+        """Update receptor gating variables with voltage and calcium data.
 
+        Args:
+            dt: Time step (s)
+            neuron: NeuronModel instance
+            comm: SynapseCommunicator instance
+            comm_iter: Postsynaptic neuron index
+        """
+        data = {
+                'V': 1e-3 * neuron.sol.V,  # Convert mV to V
+                'C': neuron.sol.C,  # Already in μM
+                'co': 1e15 * neuron.settings.cceq  # Baseline concentration in μM
+            }
+        
+        self.receptor_model.update_state(dt, pre_data=None, post_data=data)
 
 class IP3InfluxSynapse(Synapse):
     """Synapse that directly injects IP3 (single neuron).
@@ -202,23 +227,41 @@ class CalciumCoupledSynapse(Synapse):
 
         flux = np.zeros_like(neuron.sol.C)
 
-        # Get presynaptic calcium from communicator
-        pre_C_list, post_nodes_list = comm.get_pre_C0(comm_iter)
+        # Get presynaptic voltage and calcium from communicator
+        pre_V_list, post_nodes_list_V = comm.get_pre_V(comm_iter)
+        pre_C_list, post_nodes_list_C = comm.get_pre_C0(comm_iter)
 
-        for pre_C, post_nodes in zip(pre_C_list, post_nodes_list):
-            # Package data for receptor
-            pre_data = {'C': pre_C}  # μM
-            post_data = {'cceq': neuron.settings.cceq}  # umol/um^3
+        # Both should have same structure, but verify
+        for (pre_V, post_nodes_V), (pre_C, post_nodes_C) in zip(
+            zip(pre_V_list, post_nodes_list_V),
+            zip(pre_C_list, post_nodes_list_C)
+        ):
+            # Package data for receptor (includes both voltage and calcium)
+            pre_data = {
+                'V': 1e-3 * pre_V,  # Convert mV to V
+                'C': pre_C  # Already in μM
+            }
 
-            # Compute flux from receptor model
-            flux_val = self.receptor_model.compute_flux(pre_data, post_data)
-
-            # Apply to postsynaptic nodes
-            if isinstance(post_nodes, (list, np.ndarray)):
-                for node in post_nodes:
+            # Postsynaptic data depends on node
+            if isinstance(post_nodes_V, (list, np.ndarray)):
+                for node in post_nodes_V:
+                    post_data = {
+                        'V': 1e-3 * neuron.sol.V[node],  # Convert mV to V
+                        'C': neuron.sol.C[node],  # Postsynaptic calcium (μM)
+                        'Cm': neuron.settings.Cm,
+                        'cceq': neuron.settings.cceq  # Baseline concentration
+                    }
+                    flux_val = self.receptor_model.compute_flux(pre_data, post_data)
                     flux[node] += flux_val
             else:
-                flux[post_nodes] += flux_val
+                post_data = {
+                    'V': 1e-3 * neuron.sol.V[post_nodes_V],
+                    'C': neuron.sol.C[post_nodes_V],  # Postsynaptic calcium (μM)
+                    'Cm': neuron.settings.Cm,
+                    'cceq': neuron.settings.cceq
+                }
+                flux_val = self.receptor_model.compute_flux(pre_data, post_data)
+                flux[post_nodes_V] += flux_val
 
         return flux
 

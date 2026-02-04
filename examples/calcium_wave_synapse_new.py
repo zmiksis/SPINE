@@ -97,7 +97,12 @@ def main():
         duration=200.e-3
     )
 
-    neuron1.synapse_instances = [syn_ca, syn_ip3]
+    syn_ampa = SynapseFactory.create_AMPA_voltage_modulated(
+        nodes=[500]
+    )
+
+    # neuron1.synapse_instances = [syn_ca, syn_ip3]
+    neuron1.synapse_instances = [syn_ampa]
 
     # Postsynaptic neuron: Calcium-dependent coupling from presynaptic neuron
     # This synapse responds to presynaptic calcium at node 0
@@ -159,7 +164,7 @@ def main():
     axes[1].set_xlabel('Time (ms)')
     axes[1].set_ylabel('Position ($\mu$m)')
     fig.colorbar(im1, ax=axes, orientation='vertical', fraction=0.046, pad=0.04, label='$\mu$M')
-    fig.suptitle('$Ca^{2+}_{cyt}$ (NEW Architecture)', fontsize=14)
+    fig.suptitle('$Ca^{2+}_{cyt}$', fontsize=14)
     plt.show()
 
     # Plot ER calcium
@@ -178,7 +183,7 @@ def main():
     axes[1].set_xlabel('Time (ms)')
     axes[1].set_ylabel('Position ($\mu$m)')
     fig.colorbar(im1, ax=axes, orientation='vertical', fraction=0.046, pad=0.04, label='$\mu$M')
-    fig.suptitle('$Ca^{2+}_{er}$ (NEW Architecture)', fontsize=14)
+    fig.suptitle('$Ca^{2+}_{er}$', fontsize=14)
     plt.show()
 
     # Plot voltage
@@ -197,7 +202,7 @@ def main():
     axes[1].set_xlabel('Time (ms)')
     axes[1].set_ylabel('Position ($\mu$m)')
     fig.colorbar(im1, ax=axes, orientation='vertical', fraction=0.046, pad=0.04, label='mV')
-    fig.suptitle('$V$ (NEW Architecture)', fontsize=14)
+    fig.suptitle('$V$', fontsize=14)
     plt.show()
 
 if __name__ == "__main__":

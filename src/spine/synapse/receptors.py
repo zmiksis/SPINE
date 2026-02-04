@@ -414,6 +414,154 @@ class CalciumModulatedAMPA(ReceptorModel):
         self.s0 = self.s
         self.s = np.clip(s_new, 0.0, 1.0)
 
+class AMPAVModulatedReceptor(ReceptorModel):
+    """AMPA receptor with voltage-dependent plasticity.
+
+    Combines standard AMPA kinetics with postsynaptic voltage-dependent
+    plasticity.
+
+    This enables modeling of:
+    - Paired-pulse facilitation
+    - Activity-dependent synaptic strength
+
+    Example:
+        receptor = AMPAVModulatedReceptor(
+            g_O2=9.0e-12,
+            g_O3=15.0e-12,
+            g_O4=21.0e-12,
+            E_rev=0.0,
+            n_receptors=20,
+            rho=0.0
+        )
+    """
+
+    def __init__(self, g_O2: float = 9.0e-12, g_O3: float = 15.0e-12,
+                 g_O4: float = 21.0e-12,
+                 E_rev: float = 0.0, n_receptors: int = 2.22e3,
+                 rho: float = 0.0):
+        """Initialize calcium-modulated AMPA receptor.
+
+        Args:
+            g_O2: Conductance for state O2 (S)
+            g_O3: Conductance for state O3 (S)
+            g_O4: Conductance for state O4 (S)
+            E_rev: Reversal potential (V)
+            n_receptors: Number of receptors in synapse
+        """
+        self.g_max = (g_O2 + g_O3 + g_O4) / 3.0  # Initial conductance
+        self.g_max0 = self.g_max
+        self.E_rev = E_rev
+        self.n_receptors = n_receptors
+        self.Ca_fraction = 0.037  # Calcium-dependent fraction
+
+        a00 = 1.002                         # Cpre factor for thetad basal
+        a01 = 1.954                         # Cpost factor for thetad basal
+        a10 = 1.159                         # Cpre factor for thetap basal
+        a11 = 2.483                         # Cpost factor for thetap basal
+
+        Cpre = 0.07365765664151952          # units??
+        Cpost = 0.0132951761734736          # units??
+
+        self.thetad = a00 * Cpre + a01 * Cpost   # depression threshold
+        self.thetap = a10 * Cpre + a11 * Cpost   # potentiation threshold
+
+        self.gammap = 216.2                      # potentiation rate
+        self.gammad = 101.5                      # depression rate
+        self.taustar = 278.318                   # seconds
+        self.cstar = 0.0                         # leaky calcium integrator, probably mM?
+        self.cstar0 = 0.0                        # previous cstar
+
+        self.tau = 70                            # seconds
+        self.rho = rho                          # synapse state (0: depressed, 1: potentiated)
+        self.rho0 = rho                           # previous synapse state
+
+        self.tauGampa = 100.0                    # seconds
+
+        if rho == 0.0:
+            self.Gd = 1.0 * self.g_max
+            self.Gp = 2.0 * self.g_max
+        else:
+            self.Gd = (1./2.) * self.g_max
+            self.Gp = 1.0 * self.g_max
+
+    def compute_flux(self, pre_data: dict, post_data: dict) -> float:
+        """Compute AMPA current with calcium-dependent facilitation.
+
+        Args:
+            post_data: {'V': postsynaptic voltage (V)}
+
+        Returns:
+            Current (V/s for voltage equation)
+        """
+        V_post = post_data.get('V', -0.072)  # V
+        Far = 9.6485e-2 # Faradays constant (C/umol)
+        z = 2.0 # Calcium valence
+
+        flux = self.Ca_fraction * self.n_receptors * self.g_max * (V_post - self.E_rev)
+        flux /= (z * Far)  # Convert to umol/s
+
+        if isinstance(flux, np.ndarray):
+            flux[flux < 0] = 0.0  # No negative flux
+        else:
+            flux = max(0.0, flux)
+
+        return flux
+
+    def update_state(self, dt: float, pre_data: dict, post_data: dict):
+        """Update activation variable with SBDF2.
+
+        Args:
+            dt: Time step (s)
+            post_data: {'C': postsynaptic calcium (μM), 'co': baseline calcium (μM)}
+        """
+
+        C = post_data.get('C', 0.0)     # μM
+        co = post_data.get('co', 50e-3)  # μM
+
+        g_max_new = (4./3.)*self.g_max + (4./3.)*self.gampaF(self.g_max, self.rho)*dt - (1./3.)*self.g_max0 - (2./3.)*self.gampaF(self.g_max0, self.rho0)*dt
+        self.g_max0 = self.g_max
+        self.g_max = g_max_new
+
+        rho_new = (4./3.)*self.rho + (4./3.)*self.rhoF(self.rho)*dt - (1./3.)*self.rho0 - (2./3.)*self.rhoF(self.rho0)*dt
+        self.rho0 = self.rho
+        self.rho = rho_new
+
+        cstar_new = (4./3.)*self.cstar + (4./3.)*self.cstarF(self.cstar, C, co)*dt - (1./3.)*self.cstar0 - (2./3.)*self.cstarF(self.cstar0, C, co)*dt
+        self.cstar0 = self.cstar
+        self.cstar = cstar_new
+
+        if isinstance(self.cstar, np.ndarray):
+            print(self.cstar[500])
+        else:
+            print(self.cstar)
+
+    # Helper functions for plasticity dynamics
+    def rhoF(self, rho):
+
+        F = -rho * (1.0 - rho) * (0.5 - rho)
+        F += self.gammap * (1.0 - rho) * np.heaviside(self.cstar - self.thetap, 0.5)
+        F -= self.gammad * rho * np.heaviside(self.cstar - self.thetad, 0.5)
+        F /= self.tau
+
+        return F
+
+    def cstarF(self, cstar, ci, co):
+
+        F = -cstar / self.taustar
+        F += ci - co
+
+        return F
+    
+    def gbar(self, rho):
+
+        return self.Gd + rho * (self.Gp - self.Gd)
+
+    def gampaF(self, Gampa, rho):
+
+        F = self.gbar(rho) - Gampa
+        F /= self.tauGampa
+
+        return F
 
 class CustomReceptor(ReceptorModel):
     """User-defined receptor via callback functions.

@@ -21,7 +21,8 @@ from spine.synapse.temporal import (ConstantPattern, LinearDecayPattern,
 from spine.synapse.receptors import (DirectCalciumRelease, DirectIP3Release,
                                          CalciumDependentRelease, AMPAReceptor,
                                          NMDAReceptor, GABAReceptor,
-                                         CalciumModulatedAMPA, CustomReceptor)
+                                         CalciumModulatedAMPA, CustomReceptor,
+                                         AMPAVModulatedReceptor)
 from spine.synapse.calcium_coupled import (CalciumInfluxSynapse, IP3InfluxSynapse,
                                                CalciumCoupledSynapse, ChemicalSynapse)
 
@@ -126,6 +127,36 @@ class SynapseFactory:
         pattern = PulseTrainPattern(amplitude=1.0, pulse_duration=pulse_duration,
                                      frequency=frequency, n_pulses=n_pulses)
         receptor = DirectCalciumRelease(max_flux=amplitude)
+        return CalciumInfluxSynapse(nodes, pattern, receptor)
+    
+    @staticmethod
+    def create_AMPA_voltage_modulated(nodes: Union[int, List[int]],
+                                        g_O2: float = 9.0e-12, g_O3: float = 15.0e-12,
+                                        g_O4: float = 21.0e-12,
+                                        E_rev: float = 0.0, n_receptors: int = 2.22e3,
+                                        rho: float = 0.0) -> CalciumInfluxSynapse:
+        """Create AMPA receptor with calcium-dependent facilitation.
+
+        Combines AMPA kinetics with presynaptic calcium-dependent modulation,
+        enabling short-term synaptic plasticity (facilitation).
+
+        Args:
+            post_nodes: Postsynaptic node indices
+            g_O2: Conductance of state O2 (S/um^2)
+            g_O3: Conductance of state O3 (S/um^2)
+            g_O4: Conductance of state O4 (S/um^2)
+            E_rev: Reversal potential (V)
+            n_receptors: Number of receptors
+            rho: Initial synapse state (0: depressed, 1: potentiated)
+
+        Returns:
+            CalciumInfluxSynapse with AMPAVModulatedReceptor receptor
+        """
+        pattern = ConstantPattern(amplitude=1.0, duration=1e99, start_time=0.0)
+        receptor = AMPAVModulatedReceptor(
+            g_O2=g_O2, g_O3=g_O3, g_O4=g_O4,
+            E_rev=E_rev, n_receptors=n_receptors, rho=rho
+        )
         return CalciumInfluxSynapse(nodes, pattern, receptor)
 
     # ==================== Single Neuron IP3 Synapses ====================

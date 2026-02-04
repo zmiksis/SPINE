@@ -56,7 +56,8 @@ from .receptors import (
     NMDAReceptor,
     GABAReceptor,
     CalciumModulatedAMPA,
-    CustomReceptor
+    CustomReceptor,
+    AMPAVModulatedReceptor
 )
 
 # Concrete synapse types
@@ -98,7 +99,8 @@ __all__ = [
     'GABAReceptor',
     'CalciumModulatedAMPA',
     'CustomReceptor',
-
+    'AMPAVModulatedReceptor',
+    
     # Concrete synapses
     'CalciumInfluxSynapse',
     'IP3InfluxSynapse',
