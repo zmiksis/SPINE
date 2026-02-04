@@ -98,7 +98,8 @@ def main():
     )
 
     syn_ampa = SynapseFactory.create_AMPA_voltage_modulated(
-        nodes=[500]
+        nodes=[500],
+        n_receptors=437
     )
 
     # neuron1.synapse_instances = [syn_ca, syn_ip3]

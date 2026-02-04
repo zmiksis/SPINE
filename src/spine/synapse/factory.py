@@ -133,7 +133,7 @@ class SynapseFactory:
     def create_AMPA_voltage_modulated(nodes: Union[int, List[int]],
                                         g_O2: float = 9.0e-12, g_O3: float = 15.0e-12,
                                         g_O4: float = 21.0e-12,
-                                        E_rev: float = 0.0, n_receptors: int = 2.22e3,
+                                        E_rev: float = 0.0, n_receptors: int = 437,
                                         rho: float = 0.0) -> CalciumInfluxSynapse:
         """Create AMPA receptor with calcium-dependent facilitation.
 
@@ -146,7 +146,7 @@ class SynapseFactory:
             g_O3: Conductance of state O3 (S/um^2)
             g_O4: Conductance of state O4 (S/um^2)
             E_rev: Reversal potential (V)
-            n_receptors: Number of receptors
+            n_receptors: Number of receptors per um^2
             rho: Initial synapse state (0: depressed, 1: potentiated)
 
         Returns:

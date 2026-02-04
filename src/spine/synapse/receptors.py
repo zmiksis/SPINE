@@ -437,7 +437,7 @@ class AMPAVModulatedReceptor(ReceptorModel):
 
     def __init__(self, g_O2: float = 9.0e-12, g_O3: float = 15.0e-12,
                  g_O4: float = 21.0e-12,
-                 E_rev: float = 0.0, n_receptors: int = 2.22e3,
+                 E_rev: float = 0.0, n_receptors: int = 437,
                  rho: float = 0.0):
         """Initialize calcium-modulated AMPA receptor.
 
@@ -446,7 +446,7 @@ class AMPAVModulatedReceptor(ReceptorModel):
             g_O3: Conductance for state O3 (S)
             g_O4: Conductance for state O4 (S)
             E_rev: Reversal potential (V)
-            n_receptors: Number of receptors in synapse
+            n_receptors: Number of receptors in synapse per um^2
         """
         self.g_max = (g_O2 + g_O3 + g_O4) / 3.0  # Initial conductance
         self.g_max0 = self.g_max
@@ -522,6 +522,11 @@ class AMPAVModulatedReceptor(ReceptorModel):
         self.g_max0 = self.g_max
         self.g_max = g_max_new
 
+        # if isinstance(self.g_max, np.ndarray):
+        #     print(self.g_max[500])
+        # else:
+        #     print(self.g_max)
+
         rho_new = (4./3.)*self.rho + (4./3.)*self.rhoF(self.rho)*dt - (1./3.)*self.rho0 - (2./3.)*self.rhoF(self.rho0)*dt
         self.rho0 = self.rho
         self.rho = rho_new
@@ -530,10 +535,10 @@ class AMPAVModulatedReceptor(ReceptorModel):
         self.cstar0 = self.cstar
         self.cstar = cstar_new
 
-        if isinstance(self.cstar, np.ndarray):
-            print(self.cstar[500])
-        else:
-            print(self.cstar)
+        # if isinstance(self.cstar, np.ndarray):
+        #     print(self.cstar[500])
+        # else:
+        #     print(self.cstar)
 
     # Helper functions for plasticity dynamics
     def rhoF(self, rho):
