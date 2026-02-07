@@ -260,6 +260,11 @@ class CableSettings():
             if self.neuron.currents['I_syn']:
                 I_total -= self.I_syn(comm, comm_iter)
 
+        # Voltage-domain synapses (AMPA, NMDA, GABA from synapse_instances)
+        for syn in self.neuron.synapse_instances:
+            if getattr(syn, 'domain', None) == 'voltage':
+                I_total -= syn.compute_current(0.0, self.neuron, comm, comm_iter)
+
         self.profile = I_total + self.Ext
 
     def n_state(self, n, V):
@@ -392,3 +397,8 @@ class CableSettings():
                 tmp = self.s.copy()
                 self.s = (4./3.)*self.s + (4./3.)*state*dt - (1./3.)*self.s0 - (2./3.)*state0*dt
                 self.s0 = tmp
+
+        # Voltage-domain synapses (AMPA, NMDA, GABA from synapse_instances)
+        for syn in self.neuron.synapse_instances:
+            if getattr(syn, 'domain', None) == 'voltage':
+                syn.update_state(dt, self.neuron, comm, comm_iter)
