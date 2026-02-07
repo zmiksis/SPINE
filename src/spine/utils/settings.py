@@ -148,6 +148,9 @@ class ProblemSettings():
 		self.Cm = 0.01e-12 # F / um^2
 		self.Rm = 750.0e4 # Ohm x um
 
+		# Set location of a voltage clamp
+		self.voltage_clamp = None # (node_index, voltage_value)
+
 		# Geometry settings
 		self.len_scale = 1.0e6 # m to um
 		self.rad = 0.5 # if constant radius, um

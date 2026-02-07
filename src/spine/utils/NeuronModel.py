@@ -68,7 +68,11 @@ class NeuronModel():
         self.V_shape = self.graph.nid.shape
         self.V_dtype = np.float64
         self.sol.V = np.ndarray(self.V_shape, dtype=self.V_dtype, buffer=self.shmV.buf)
-        if self.settings.Vdat is None: self.sol.V[:] = 1e3*self.settings.Vrest
+        if self.settings.Vdat is None: 
+            self.sol.V[:] = 1e3*self.settings.Vrest
+            if self.settings.voltage_clamp is not None:
+                node_index, voltage_value = self.settings.voltage_clamp
+                self.sol.V[node_index] = 1e3*voltage_value
         else: self.sol.V[:] =  1e3*np.loadtxt(self.settings.Vdat+'vm_0000000.dat', usecols=3)
         
 
@@ -80,7 +84,11 @@ class NeuronModel():
         self.V0_shape = self.graph.nid.shape
         self.V0_dtype = np.float64
         self.sol.V0 = np.ndarray(self.V0_shape, dtype=self.V0_dtype, buffer=self.shmV0.buf)
-        if self.settings.Vdat is None: self.sol.V0[:] = 1e3*self.settings.Vrest
+        if self.settings.Vdat is None: 
+            self.sol.V0[:] = 1e3*self.settings.Vrest
+            if self.settings.voltage_clamp is not None:
+                node_index, voltage_value = self.settings.voltage_clamp
+                self.sol.V0[node_index] = 1e3*voltage_value
         else: self.sol.V0[:] =  1e3*np.loadtxt(self.settings.Vdat+'vm_0000000.dat', usecols=3)
 
     ###########################################################

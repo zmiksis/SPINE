@@ -234,7 +234,21 @@ def SBDF_step(neuron, neuronDict, comm, comm_iter, solver, writeStep, i, t0):
 				neuron.CableSettings.current_profile(comm=comm, comm_iter=comm_iter)
 				neuron.CableSettings.update_gating_variables(comm=comm, comm_iter=comm_iter)
 				Vprof = neuron.CableSettings.profile
+
+				# Apply voltage clamp if set (overrides computed profile)
+				if neuron.settings.voltage_clamp is not None:
+					Vprof[neuron.settings.voltage_clamp[0]] = 0.
+
 				vtemp = solve_step(VdiffO1, dt, neuronDict['V0'], Vprof)
+
+				# Sherman-Morrison correction for voltage clamp (if enabled)
+				if neuron.settings.voltage_clamp is not None:
+					clamp_idx = neuron.settings.voltage_clamp[0]
+					e_clamp = np.zeros_like(neuronDict['V0'])
+					e_clamp[clamp_idx] = 1.
+					z = linalg.solve(VdiffO1, e_clamp)
+					vtemp += (neuron.settings.voltage_clamp[1] - vtemp[clamp_idx]) * z / z[clamp_idx]
+
 
 		else:
 			ctemp = solve_step(SAcLU, dt, neuronDict['c'], j + r, neuronDict['c0'], neuronDict['j0'] + neuronDict['r0'])
@@ -250,7 +264,21 @@ def SBDF_step(neuron, neuronDict, comm, comm_iter, solver, writeStep, i, t0):
 				neuron.CableSettings.update_gating_variables(comm=comm, comm_iter=comm_iter)
 				Vprof = neuron.CableSettings.profile
 				Vprof0 = neuron.CableSettings.profile0
+
+				# Apply voltage clamp if set (overrides computed profile)
+				if neuron.settings.voltage_clamp is not None:
+					Vprof[neuron.settings.voltage_clamp[0]] = 0.
+					Vprof0[neuron.settings.voltage_clamp[0]] = 0.
+
 				vtemp = solve_step(VdiffLU, dt, neuronDict['V0'], Vprof, neuronDict['V00'], Vprof0)
+
+				# Sherman-Morrison correction for voltage clamp (if enabled)
+				if neuron.settings.voltage_clamp is not None:
+					clamp_idx = neuron.settings.voltage_clamp[0]
+					e_clamp = np.zeros_like(neuronDict['V0'])
+					e_clamp[clamp_idx] = 1.
+					z = VdiffLU.solve(e_clamp)
+					vtemp += (neuron.settings.voltage_clamp[1] - vtemp[clamp_idx]) * z / z[clamp_idx]
 
 	elif solver == 'FJ':
 
