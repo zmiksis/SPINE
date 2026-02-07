@@ -151,9 +151,11 @@ class CableSettings():
             I_total -= self.I_syn(comm, comm_iter)
 
         # Voltage-domain synapses (AMPA, NMDA, GABA from synapse_instances)
+        # Normalize by Cm to convert from current (A/um²) to V/s,
+        # matching the convention used by channels and legacy I_syn.
         for syn in self.neuron.synapse_instances:
             if getattr(syn, 'domain', None) == 'voltage':
-                I_total -= syn.compute_current(0.0, self.neuron, comm, comm_iter)
+                I_total -= syn.compute_current(0.0, self.neuron, comm, comm_iter) / self.Cm
 
         self.profile = I_total + self.Ext
 

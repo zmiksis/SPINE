@@ -247,7 +247,7 @@ def SBDF_step(neuron, neuronDict, comm, comm_iter, solver, writeStep, i, t0):
 					e_clamp = np.zeros_like(neuronDict['V0'])
 					e_clamp[clamp_idx] = 1.
 					z = linalg.solve(VdiffO1, e_clamp)
-					vtemp += (1e3 * neuron.settings.voltage_clamp[1] - vtemp[clamp_idx]) * z / z[clamp_idx]
+					vtemp += (neuron.settings.voltage_clamp[1] - vtemp[clamp_idx]) * z / z[clamp_idx]
 
 
 		else:
@@ -278,7 +278,7 @@ def SBDF_step(neuron, neuronDict, comm, comm_iter, solver, writeStep, i, t0):
 					e_clamp = np.zeros_like(neuronDict['V0'])
 					e_clamp[clamp_idx] = 1.
 					z = VdiffLU.solve(e_clamp)
-					vtemp += (1e3 * neuron.settings.voltage_clamp[1] - vtemp[clamp_idx]) * z / z[clamp_idx]
+					vtemp += (neuron.settings.voltage_clamp[1] - vtemp[clamp_idx]) * z / z[clamp_idx]
 
 	elif solver == 'FJ':
 
