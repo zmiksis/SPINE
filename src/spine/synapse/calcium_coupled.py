@@ -288,20 +288,26 @@ class ChemicalSynapse(Synapse):
 
     def __init__(self, post_nodes: Union[int, List[int]],
                  receptor_model: ReceptorModel,
-                 weight: float = 1.0):
+                 weight: float = 1.0,
+                 domain: str = 'voltage'):
         """Initialize chemical synapse.
 
         Args:
             post_nodes: Postsynaptic node indices
             receptor_model: ReceptorModel (AMPA, NMDA, GABA, etc.)
             weight: Synaptic weight (multiplier)
+            domain: Target equation domain. One of:
+                'voltage'  - contributes to cable equation (default)
+                'cytosol'  - contributes to cytosolic calcium equation
+                'ip3'      - contributes to IP3 equation
+                'receptor' - contributes to calcium via receptor-mediated release
         """
         # Always active (temporal pattern handled by receptor kinetics)
         temporal = ConstantPattern(amplitude=1.0, duration=np.inf)
 
         super().__init__(post_nodes, temporal, receptor_model)
         self.weight = weight
-        self.domain = 'voltage'  # Affects voltage dynamics
+        self.domain = domain
 
     def compute_current(self, t: float, neuron, comm=None, comm_iter=None) -> np.ndarray:
         """Compute synaptic current based on presynaptic voltage and calcium.

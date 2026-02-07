@@ -236,7 +236,7 @@ class SynapseFactory:
     @staticmethod
     def create_AMPA(post_nodes: Union[int, List[int]], g_max: float = 2.7e-10,
                     E_rev: float = 0.0, tau: float = 5.26e-3,
-                    weight: float = 1.0) -> ChemicalSynapse:
+                    weight: float = 1.0, domain: str = 'voltage') -> ChemicalSynapse:
         """Create AMPA glutamate receptor synapse (fast excitatory).
 
         Args:
@@ -245,6 +245,7 @@ class SynapseFactory:
             E_rev: Reversal potential (V)
             tau: Time constant for activation decay (s)
             weight: Synaptic weight (multiplier)
+            domain: Target equation domain ('voltage', 'cytosol', 'ip3', 'receptor')
 
         Returns:
             ChemicalSynapse with AMPA receptor
@@ -255,7 +256,7 @@ class SynapseFactory:
             )
         """
         receptor = AMPAReceptor(g_max=g_max, E_rev=E_rev, tau=tau)
-        return ChemicalSynapse(post_nodes, receptor, weight)
+        return ChemicalSynapse(post_nodes, receptor, weight, domain)
 
     @staticmethod
     def create_calcium_modulated_AMPA(post_nodes: Union[int, List[int]],
@@ -263,7 +264,8 @@ class SynapseFactory:
                                        tau: float = 5.26e-3, ca_sensitivity: float = 5.0,
                                        baseline_release: float = 0.5,
                                        ca_baseline: float = 0.05,
-                                       weight: float = 1.0) -> ChemicalSynapse:
+                                       weight: float = 1.0,
+                                       domain: str = 'voltage') -> ChemicalSynapse:
         """Create AMPA receptor with calcium-dependent facilitation.
 
         Combines AMPA kinetics with presynaptic calcium-dependent modulation,
@@ -281,6 +283,7 @@ class SynapseFactory:
             baseline_release: Baseline release probability (0-1)
             ca_baseline: Baseline calcium concentration (μM)
             weight: Synaptic weight (multiplier)
+            domain: Target equation domain ('voltage', 'cytosol', 'ip3', 'receptor')
 
         Returns:
             ChemicalSynapse with CalciumModulatedAMPA receptor
@@ -303,13 +306,13 @@ class SynapseFactory:
             baseline_release=baseline_release,
             ca_baseline=ca_baseline
         )
-        return ChemicalSynapse(post_nodes, receptor, weight)
+        return ChemicalSynapse(post_nodes, receptor, weight, domain)
 
     @staticmethod
     def create_NMDA(post_nodes: Union[int, List[int]], g_max: float = 1e-10,
                     E_rev: float = 0.0, tau_rise: float = 2e-3,
                     tau_decay: float = 80e-3, Mg_conc: float = 1.0,
-                    weight: float = 1.0) -> ChemicalSynapse:
+                    weight: float = 1.0, domain: str = 'voltage') -> ChemicalSynapse:
         """Create NMDA glutamate receptor synapse (slow excitatory).
 
         NMDA receptors have Mg2+ voltage-dependent block and
@@ -323,6 +326,7 @@ class SynapseFactory:
             tau_decay: Decay time constant (s)
             Mg_conc: Extracellular magnesium concentration (mM)
             weight: Synaptic weight (multiplier)
+            domain: Target equation domain ('voltage', 'cytosol', 'ip3', 'receptor')
 
         Returns:
             ChemicalSynapse with NMDA receptor
@@ -335,12 +339,12 @@ class SynapseFactory:
         receptor = NMDAReceptor(g_max=g_max, E_rev=E_rev,
                                 tau_rise=tau_rise, tau_decay=tau_decay,
                                 Mg_conc=Mg_conc)
-        return ChemicalSynapse(post_nodes, receptor, weight)
+        return ChemicalSynapse(post_nodes, receptor, weight, domain)
 
     @staticmethod
     def create_GABA(post_nodes: Union[int, List[int]], g_max: float = 5e-11,
                     E_rev: float = -0.070, tau: float = 10e-3,
-                    weight: float = 1.0) -> ChemicalSynapse:
+                    weight: float = 1.0, domain: str = 'voltage') -> ChemicalSynapse:
         """Create GABA_A receptor synapse (fast inhibitory).
 
         Args:
@@ -349,6 +353,7 @@ class SynapseFactory:
             E_rev: Reversal potential (V), typically ~-70 mV (inhibitory)
             tau: Time constant for activation decay (s)
             weight: Synaptic weight (multiplier)
+            domain: Target equation domain ('voltage', 'cytosol', 'ip3', 'receptor')
 
         Returns:
             ChemicalSynapse with GABA receptor
@@ -359,7 +364,7 @@ class SynapseFactory:
             )
         """
         receptor = GABAReceptor(g_max=g_max, E_rev=E_rev, tau=tau)
-        return ChemicalSynapse(post_nodes, receptor, weight)
+        return ChemicalSynapse(post_nodes, receptor, weight, domain)
 
     # ==================== Custom Synapses ====================
 
