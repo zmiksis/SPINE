@@ -377,31 +377,37 @@ class ChemicalSynapse(Synapse):
         if comm is None:
             return
 
-        # Get presynaptic voltage and calcium
+        # Get presynaptic voltage, previous voltage, and calcium
         pre_V_list, post_nodes_list_V = comm.get_pre_V(comm_iter)
+        pre_V0_list, _ = comm.get_pre_V0(comm_iter)
         pre_C_list, post_nodes_list_C = comm.get_pre_C0(comm_iter)
 
-        for (pre_V, post_nodes_V), (pre_C, post_nodes_C) in zip(
+        for (pre_V, post_nodes_V), pre_V0, (pre_C, post_nodes_C) in zip(
             zip(pre_V_list, post_nodes_list_V),
+            pre_V0_list,
             zip(pre_C_list, post_nodes_list_C)
         ):
             # Package both voltage and calcium for receptor
             pre_data = {
-                'V': 1e-3 * pre_V,  # Convert mV to V
+                'V': 1e-3 * pre_V,   # Convert mV to V
+                'V0': 1e-3 * pre_V0, # Previous timestep voltage (V)
                 'C': pre_C  # Already in μM
             }
 
             # Postsynaptic data (for calcium-dependent receptor models)
             if isinstance(post_nodes_V, (list, np.ndarray)):
                 # Use first node for update (synaptic state is shared)
+                node = post_nodes_V[0] if hasattr(post_nodes_V, '__iter__') else post_nodes_V
                 post_data = {
-                    'V': 1e-3 * neuron.sol.V[post_nodes_V[0]] if hasattr(post_nodes_V, '__iter__') else 1e-3 * neuron.sol.V[post_nodes_V],
-                    'C': neuron.sol.C[post_nodes_V[0]] if hasattr(post_nodes_V, '__iter__') else neuron.sol.C[post_nodes_V],
+                    'V': 1e-3 * neuron.sol.V[node],
+                    'V0': 1e-3 * neuron.sol.V0[node],
+                    'C': neuron.sol.C[node],
                     'cceq': neuron.settings.cceq
                 }
             else:
                 post_data = {
                     'V': 1e-3 * neuron.sol.V[post_nodes_V],
+                    'V0': 1e-3 * neuron.sol.V0[post_nodes_V],
                     'C': neuron.sol.C[post_nodes_V],
                     'cceq': neuron.settings.cceq
                 }
