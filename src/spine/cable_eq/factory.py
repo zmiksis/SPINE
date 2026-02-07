@@ -61,12 +61,13 @@ class ChannelFactory:
         return PotassiumChannel(g_max, E_rev, Vt)
 
     @staticmethod
-    def create_Ca(g_max=5.16*6e-12, K_Ca=140e-18):
+    def create_Ca(g_max=5.16*6e-12, K_Ca=140e-18, co=2000e-18):
         """Create calcium channel with Ca-dependent inactivation.
 
         Args:
             g_max: Maximum conductance (S/um²)
             K_Ca: Half-maximal calcium for inactivation (umol/um³ = μM * 1e-15)
+            co: Extracellular calcium concentration (umol/um³)
 
         Returns:
             CalciumChannel instance
@@ -74,7 +75,7 @@ class ChannelFactory:
         Example:
             ca = ChannelFactory.create_Ca(g_max=8e-12)  # L-type like
         """
-        return CalciumChannel(g_max, K_Ca)
+        return CalciumChannel(g_max, K_Ca, co)
 
     @staticmethod
     def create_leak(g_max=0.05e-12, V_rest=-70e-3):

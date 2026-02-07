@@ -88,6 +88,44 @@ class CableSettings():
         self.profile = None
         self.profile0 = None
 
+    def _auto_populate_channels(self):
+        """Create channel objects from currents flags if none were added explicitly.
+
+        This allows users to simply set flags like neuron.currents['I_Na'] = True
+        and have the corresponding channel created automatically with default
+        parameters. Users can customize parameters beforehand by modifying the
+        legacy attributes (e.g. neuron.CableSettings.Na.g = 800e-12).
+
+        If channels were already added via add_channel() / ChannelFactory,
+        this method does nothing.
+        """
+        if self.channels:
+            return
+
+        from .channels import SodiumChannel, PotassiumChannel, CalciumChannel, LeakChannel
+
+        if self.neuron.currents.get('I_Na', False):
+            self.channels.append(SodiumChannel(
+                g_max=self.Na.g, E_rev=self.Na.E, Vt=self.Na.Vt
+            ))
+
+        if self.neuron.currents.get('I_K', False):
+            self.channels.append(PotassiumChannel(
+                g_max=self.K.g, E_rev=self.K.E, Vt=self.K.Vt
+            ))
+
+        if self.neuron.currents.get('I_Ca', False):
+            self.channels.append(CalciumChannel(
+                g_max=self.g_Ca,
+                K_Ca=self.K_Ca * 1e-15,
+                co=self.neuron.cytConstants['co']
+            ))
+
+        if self.neuron.currents.get('I_leak', False):
+            self.channels.append(LeakChannel(
+                g_max=self.leak.g, E_rev=self.leak.E
+            ))
+
     def add_channel(self, channel):
         """Add an ion channel to the neuron (NEW factory pattern API).
 
@@ -114,8 +152,6 @@ class CableSettings():
 
         for channel in self.channels:
             channel.initialize_state(V_rest, nnodes)
-
-        print('Channel gating variables initialized!')
 
     def set_leak_reversal(self):
         """Compute balancing current to maintain resting potential.
@@ -257,52 +293,15 @@ class CableSettings():
     
     def set_gating_variables(self):
 
-        Vrest = 1e3*self.neuron.settings.Vrest
+        # Auto-create channel objects from flags if user didn't add them explicitly
+        self._auto_populate_channels()
 
-        if self.neuron.currents['I_K']:
-            n0 = 1.
-            n = 0.5
-            while abs(n - n0) > 1e-6:
-                tmp = copy.deepcopy(n)
-                n = n - self.n_state(n, Vrest) * (n - n0) / (self.n_state(n, Vrest) - self.n_state(n0, Vrest))
-                n = np.clip(n, 0.0, 1.0)
-                n0 = copy.deepcopy(tmp)
-            self.n = n*np.ones_like(self.neuron.sol.C)      
-            self.n0 = n*np.ones_like(self.neuron.sol.C) 
+        # Initialize gating variables for all channel objects
+        self.initialize_channels()
 
-        if self.neuron.currents['I_Na']:
-            m0 = 1.
-            m = 0.5
-            while abs(m - m0) > 1e-6:
-                tmp = copy.deepcopy(m)
-                m = m - self.m_state(m, Vrest) * (m - m0) / (self.m_state(m, Vrest) - self.m_state(m0, Vrest))
-                m = np.clip(m, 0.0, 1.0)
-                m0 = copy.deepcopy(tmp)
-            self.m = m*np.ones_like(self.neuron.sol.C)      
-            self.m0 = m*np.ones_like(self.neuron.sol.C) 
-
-            h0 = 1.
-            h = 0.5
-            while abs(h - h0) > 1e-6:
-                tmp = copy.deepcopy(h)
-                h = h - self.h_state(h, Vrest) * (h - h0) / (self.h_state(h, Vrest) - self.h_state(h0, Vrest))
-                h = np.clip(h, 0.0, 1.0)
-                h0 = copy.deepcopy(tmp)
-            self.h = h*np.ones_like(self.neuron.sol.C)      
-            self.h0 = h*np.ones_like(self.neuron.sol.C) 
-
-        if self.neuron.currents['I_Ca']:
-            q0 = 1.
-            q = 0.5
-            while abs(q - q0) > 1e-6:
-                tmp = copy.deepcopy(q)
-                q = q - self.q_state(q, Vrest) * (q - q0) / (self.q_state(q, Vrest) - self.q_state(q0, Vrest))
-                q = np.clip(q, 0.0, 1.0)
-                q0 = copy.deepcopy(tmp)
-            self.q = q*np.ones_like(self.neuron.sol.C)      
-            self.q0 = q*np.ones_like(self.neuron.sol.C) 
-
-        if self.neuron.currents['I_syn']:
+        # Synaptic gating is handled separately (not a standard ion channel)
+        if self.neuron.currents.get('I_syn', False):
+            Vrest = 1e3*self.neuron.settings.Vrest
             s0 = 1.
             s = 0.5
             while abs(s - s0) > 1e-6:
@@ -310,9 +309,9 @@ class CableSettings():
                 s = s - self.s_state(s, Vrest) * (s - s0) / (self.s_state(s, Vrest) - self.s_state(s0, Vrest))
                 s = np.clip(s, 0.0, 1.0)
                 s0 = copy.deepcopy(tmp)
-            self.s = s*np.ones_like(self.neuron.sol.C)      
-            self.s0 = s*np.ones_like(self.neuron.sol.C) 
-        
+            self.s = s*np.ones_like(self.neuron.sol.C)
+            self.s0 = s*np.ones_like(self.neuron.sol.C)
+
         print('Gating variables converged!')
 
     def update_gating_variables(self, comm, comm_iter):

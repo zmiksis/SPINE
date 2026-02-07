@@ -105,8 +105,7 @@ def SBDF_single(neuron_list, comm, writeStep, solver, er_scale, threads_per_proc
 		neuron.initial_conditions()
 		if neuron.model['voltage_coupling']:
 			neuron.CableSettings.set_gating_variables()
-			if neuron.currents['I_leak']:
-				neuron.CableSettings.set_leak_reversal()
+			neuron.CableSettings.set_leak_reversal()
 		
 	# Attach to shared memory
 	for neuron in neuron_list:
@@ -173,8 +172,7 @@ def SBDF_worker(worker_id, neuron_list, neuron_batch, comm, comm_idx, writeStep,
 		neuron.initial_conditions()
 		if neuron.model['voltage_coupling']:
 			neuron.CableSettings.set_gating_variables()
-			if neuron.currents['I_leak']:
-				neuron.CableSettings.set_leak_reversal()
+			neuron.CableSettings.set_leak_reversal()
 		
 	# Attach to shared memory
 	for neuron in neuron_list:
