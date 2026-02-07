@@ -129,6 +129,11 @@ def jSYN(neuron,c,p,t,V, comm, comm_iter):
 	for syn in neuron.synapse_instances:
 		# Check if this is new Synapse class (has compute_current method)
 		if hasattr(syn, 'compute_current'):
+			# Voltage-domain synapses (AMPA, NMDA, GABA) are handled
+			# entirely in current_model.py via the cable equation.
+			if getattr(syn, 'domain', None) == 'voltage':
+				continue
+
 			# New architecture
 			flux = syn.compute_current(t, neuron, comm, comm_iter)
 
@@ -139,10 +144,6 @@ def jSYN(neuron,c,p,t,V, comm, comm_iter):
 				vip3 += flux
 			elif syn.domain == 'receptor':
 				v += flux
-			elif syn.domain == 'voltage':
-				# ChemicalSynapse affects voltage, not handled here
-				# (voltage synapses handled in current_model.py)
-				pass
 
 			# Update synapse state if needed
 			if hasattr(syn, 'update_state'):
