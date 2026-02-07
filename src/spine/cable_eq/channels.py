@@ -138,15 +138,17 @@ class CalciumChannel(ChannelModel):
     and calcium-dependent inactivation (rho factor).
     """
 
-    def __init__(self, g_max=5.16*6e-12, K_Ca=140e-18):
+    def __init__(self, g_max=5.16*6e-12, K_Ca=140e-18, co=2000e-18):
         """Initialize calcium channel.
 
         Args:
             g_max: Maximum conductance (S/um²)
             K_Ca: Half-maximal calcium for inactivation (umol/um³)
+            co: Extracellular calcium concentration (umol/um³)
         """
         super().__init__('Ca', g_max, E_rev=None)  # Dynamic E_rev via Nernst
         self.K_Ca = K_Ca
+        self.co = co
         self.q = GatingVariable('q', exponent=1)
 
     def compute_current(self, V, C, Cm):
@@ -162,8 +164,7 @@ class CalciumChannel(ChannelModel):
 
         E_Ca = (RT/2F) * ln(Co/Ci)
         """
-        co = 2000e-18  # External calcium (umol/um³)
-        return 12.5e-3 * np.log(co / C)
+        return 12.5e-3 * np.log(self.co / C)
 
     def update_state(self, V, V0, dt):
         """Update q gating variable."""
